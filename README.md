@@ -1,18 +1,2 @@
-function renderLevelPyramid(active){
-  const rows = [];
-  GROUP_ORDER.forEach(g=>{
-    ORG_GROUPS[g].forEach(org=>{
-      const counts={}; const names={}; let total=0;
-      active.forEach(r=>{
-        if(r[ORG_FIELD]!==org) return;
-        const {level}=classifyJobCode(r);
-        const nl = normalizeLevel(level);
-        if(nl==='미분류') return;
-        counts[nl]=(counts[nl]||0)+1; total++;
-        (names[nl]=names[nl]||[]).push(r['성명']);
-      });
-      if(total>0) rows.push({label:org, counts, names, total});
-    });
-  });
-  renderLevelPyramidCard('levelPyramidContent', rows, PYRAMID_LEVELS, '부서');
-}
+Uncaught SyntaxError: Identifier '__pyramidData' has already been declared
+index-v2 (6).html:1 Unsafe attempt to load URL file:///C:/Users/HSC/Downloads/index-v2%20(6).html from frame with URL file:///C:/Users/HSC/Downloads/index-v2%20(6).html. 'file:' URLs are treated as unique security origins.
