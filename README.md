@@ -1,1 +1,1 @@
-renderDonut('buExecContent', BU_LIST.map((b,i)=>({label:b, value:buGroups[b].exec, color: b==='우주' ? 'var(--gold)' : colors[i]})), '전사 임원(명)');
+renderBarList('buExecRatioContent', BU_LIST.map(b=>{ const g=buGroups[b]; return {label:b, value:g.exec?Math.round(g.count/g.exec*10)/10:0, color: b==='우주' ? 'var(--gold)' : 'var(--c1)'}; }), {unit:'명'});
