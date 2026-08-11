@@ -1,1 +1,1 @@
-renderBarList('buExecRatioContent', BU_LIST.map(b=>{ const g=buGroups[b]; return {label:b, value:g.exec?Math.round(g.count/g.exec*10)/10:0, color: b==='우주' ? 'var(--gold)' : 'var(--c1)'}; }), {unit:'명'});
+return `<div class="barrow" style="cursor:pointer;" onclick="togglePyramidDetail('${containerId}','${esc(r.label)}')"><div class="name">${r.label}</div><div class="stack-track">${segs}</div><div class="num">${r.total}명</div></div>`;
