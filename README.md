@@ -20,4 +20,27 @@ function togglePyramidDetail(containerId, label){
   const row = data.rows.find(r=>r.label===label);
   if(!row) return;
   const maxCount = Math.max(...data.order.map(lv=>row.counts[lv]||0), 1);
-  const rowsHt
+  const rowsHtml = data.order.map((lv,i)=>{
+    const v = row.counts[lv]||0;
+    if(v===0) return '';
+    const pct = Math.max(v/maxCount*100, 8);
+    const textColor = i >= data.order.length*0.55 ? '#1E3358' : '#fff';
+    return `<div class="pyramid-row"><div class="pyramid-bar" style="width:${pct}%;background:${data.colors[i]};color:${textColor};cursor:pointer;" title="클릭하면 이름 표시" onclick="togglePyramidNames(event,'${containerId}','${esc(label)}','${lv}')">${LEVEL_LABELS[lv]} ${v}명</div></div>`;
+  }).join('');
+  detailEl.innerHTML = `<div class="pyramid-block"><div class="pyramid-title">${label} 레벨 피라미드 (총 ${row.total}명)</div>${rowsHtml}</div>`;
+  detailEl.dataset.label = label;
+}
+function togglePyramidNames(e, containerId, label, lv){
+  e.stopPropagation();
+  const data = __pyramidData[containerId];
+  const row = data.rows.find(r=>r.label===label);
+  const names = (row.names && row.names[lv]) || [];
+  let tip = document.getElementById('pyramidNameTooltip');
+  if(!tip){ tip=document.createElement('div'); tip.id='pyramidNameTooltip'; tip.className='flow-tooltip'; document.body.appendChild(tip); }
+  const key = containerId+'|'+label+'|'+lv;
+  if(tip.style.display==='block' && tip.dataset.key===key){ tip.style.display='none'; delete tip.dataset.key; return; }
+  tip.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">${label} · ${LEVEL_LABELS[lv]} (${names.length}명)</div>` + (names.length?names.map(n=>`<div>${n}</div>`).join(''):'<div style="color:#999;">해당 인원 없음</div>');
+  tip.dataset.key = key;
+  tip.style.left=(e.pageX+12)+'px'; tip.style.top=(e.pageY+12)+'px'; tip.style.display='block';
+}
+document.addEventListener('click', e=>{ const tip=document.getElementById('pyramidNameTooltip'); if(tip && !e.target.closest('.pyramid-bar')){ tip.style.display='none'; delete tip.dataset.key; } });
