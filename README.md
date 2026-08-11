@@ -1,2 +1,1 @@
-const nameStyle = r.label==='우주' ? 'color:var(--gold);font-weight:800;' : '';
-return `<div class="barrow" style="cursor:pointer;" onclick="togglePyramidDetail('${containerId}','${esc(r.label)}')"><div class="name" style="${nameStyle}">${r.label}</div><div class="stack-track">${segs}</div><div class="num">${r.total}명</div></div>`;
+renderDonut('buExecContent', BU_LIST.map((b,i)=>({label:b, value:buGroups[b].exec, color: b==='우주' ? 'var(--gold)' : colors[i]})), '전사 임원(명)', {forceLabels:true, size:400});
