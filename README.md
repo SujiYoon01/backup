@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -130,7 +130,7 @@
   .miniflow .arrow{ font-size:18px; color:var(--mute); margin:0 10px; }
   .miniflow .diff{ font-size:12px; font-weight:700; padding:3px 9px; border-radius:10px; }
   .flow-note{ font-size:10.5px; color:var(--mute); margin-top:10px; line-height:1.6; }
-.flow-tooltip{ position:absolute; background:#fff; border:1px solid #E5E5E5; border-radius:6px; padding:8px 10px; font-size:12px; line-height:1.6; box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:50; min-width:80px; }
+  .flow-tooltip{ position:absolute; background:#fff; border:1px solid #E5E5E5; border-radius:6px; padding:8px 10px; font-size:12px; line-height:1.6; box-shadow:0 4px 12px rgba(0,0,0,.12); z-index:50; min-width:80px; }
   .change-scroll{ max-height:340px; overflow-y:auto; }
   @media (max-width:900px){ .w-half{ width:100%; } }
 </style>
@@ -179,7 +179,7 @@
       <div class="card w-half"><div class="card-title"><span class="tab" style="background:var(--pos)"></span><h2>채용 · 퇴직</h2><span class="note" id="changeNote1">전월/당월 명부 비교</span></div>
         <div id="changeContent1" class="card-body"><div class="empty-state">전월·당월 명부 CSV를 모두 올리면 표시됩니다</div></div></div>
 
-      <div class="card w-half"><div class="card-title"><span class="tab" style="background:var(--pos)"></span><h2>전입(from타사업부) · 전출(to타사업부)</h2><span class="note" id="changeNote2">전월/당월 명부 비교</span></div>
+      <div class="card w-half"><div class="card-title"><span class="tab" style="background:var(--pos)"></span><h2>전입 · 전출</h2><span class="note" id="changeNote2">전월/당월 명부 비교</span></div>
         <div id="changeContent2" class="card-body"><div class="empty-state">전월·당월 명부 CSV를 모두 올리면 표시됩니다</div></div></div>
 
       <div class="card w-half"><div class="card-title"><span class="tab" style="background:var(--pos)"></span><h2>전배 · 직급변동 · 사업장이동 · 근무지이동</h2><span class="note" id="changeNote3">전월/당월 명부 비교</span></div>
@@ -223,7 +223,7 @@
       <div class="card w-half"><div class="card-title"><span class="tab"></span><h2>사업부별 평균 연령</h2><span class="note" id="buAgeNote">한국나이 기준</span></div>
         <div id="buAgeContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
 
-      <div class="card w-half"><div class="card-title"><span class="tab" style="background:#7C5FD1"></span><h2>사업부별 임원현황</h2><span class="note">직위코드명 기준</span></div>
+      <div class="card w-half"><div class="card-title"><span class="tab" style="background:#7C5FD1"></span><h2>사업부별 임원현황</h2><span class="note">조각 클릭 시 임원 명단 확인 가능</span></div>
         <div id="buExecContent" class="card-body"><div class="empty-state">당월 명부 CSV를 올리면 표시됩니다</div></div></div>
 
       <div class="card w-half"><div class="card-title"><span class="tab" style="background:#7C5FD1"></span><h2>사업부별 임원 1인당 관할인원</h2><span class="note">사업부 총원 ÷ 임원수</span></div>
@@ -617,7 +617,7 @@ function renderJobCard(active){
   active.forEach(r=>{ const {family}=classifyJobCode(r); if(FAMILY_ORDER.includes(family)) counts[family]=(counts[family]||0)+1; });
   const labels = FAMILY_ORDER.filter(f=>counts[f]>0);
   const colors = donutPalette(labels.length);
- renderDonut('jobContent', labels.map((l,i)=>({label:FAMILY_LABELS[l], value:counts[l], color:colors[i]})), '총원(명)', {forceLabels:true, size:460});
+  renderDonut('jobContent', labels.map((l,i)=>({label:FAMILY_LABELS[l], value:counts[l], color:colors[i]})), '총원(명)', {forceLabels:true, size:460});
   document.getElementById('jobNote').textContent = `직급코드 기준, 총 ${active.length}명`;
 }
 function renderEduCard(active){
@@ -694,6 +694,26 @@ function toggleBUSummaryTooltip(e,bu){
 }
 document.addEventListener('click', e=>{ const tip=document.getElementById('buSummaryTooltip'); if(tip && e.target.tagName!=='path'){ tip.style.display='none'; delete tip.dataset.bu; } });
 
+function attachBUExecTooltip(buGroups){
+  const svg = document.querySelector('#buExecContent svg');
+  if(!svg) return;
+  const paths = svg.querySelectorAll('path');
+  paths.forEach((path,i)=>{
+    const bu = BU_LIST[i];
+    path.style.cursor='pointer';
+    path.addEventListener('click', e=>{ e.stopPropagation(); toggleBUExecTooltip(e,bu,buGroups[bu].execNames); });
+  });
+}
+function toggleBUExecTooltip(e,bu,names){
+  let tip=document.getElementById('buExecTooltip');
+  if(!tip){ tip=document.createElement('div'); tip.id='buExecTooltip'; tip.className='flow-tooltip'; document.body.appendChild(tip); }
+  if(tip.style.display==='block' && tip.dataset.bu===bu){ tip.style.display='none'; delete tip.dataset.bu; return; }
+  tip.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">${bu} 임원 (${names.length}명)</div>` + (names.length?names.map(n=>`<div>${n}</div>`).join(''):'<div style="color:#999;">해당 인원 없음</div>');
+  tip.dataset.bu = bu;
+  tip.style.left=(e.pageX+12)+'px'; tip.style.top=(e.pageY+12)+'px'; tip.style.display='block';
+}
+document.addEventListener('click', e=>{ const tip=document.getElementById('buExecTooltip'); if(tip && e.target.tagName!=='path'){ tip.style.display='none'; delete tip.dataset.bu; } });
+
 function renderBUSection(){
   if(!state.curr || !state.curr.length){
     ['buHeadcountContent','buAgeContent','buExecContent','buExecRatioContent','buEduContent','buLevelPyramidContent'].forEach(id=>{
@@ -717,14 +737,14 @@ function renderBUSection(){
 
   document.getElementById('buAgeNote').textContent = `${base.getFullYear()}년 한국나이 기준`;
 
-  const buGroups = {}; BU_LIST.forEach(b=>buGroups[b]={ count:0, exec:0, ageSum:0, ageCount:0, edu:{박사:0,석사:0,학사이하:0}, level:{} });
+  const buGroups = {}; BU_LIST.forEach(b=>buGroups[b]={ count:0, exec:0, execNames:[], ageSum:0, ageCount:0, edu:{박사:0,석사:0,학사이하:0}, level:{} });
 
   allActive.forEach(r=>{
     const bu = orgToBU(r[ORG_FIELD]);
     if(!bu) return;
     const g = buGroups[bu];
     g.count++;
-    if(isExec(r)) g.exec++;
+    if(isExec(r)){ g.exec++; g.execNames.push(r['성명']); }
     const age = koreanAge(r['법정생년월일'], base);
     if(age!==null){ g.ageSum += age; g.ageCount++; }
     const e = eduSimple((r['최종학력']||'').trim());
@@ -745,6 +765,7 @@ function renderBUSection(){
     {unit:'세', markValue:Math.round(overallAvgAge*10)/10, markLabel:`전사 평균 ${overallAvgAge.toFixed(1)}세`});
 
   renderDonut('buExecContent', BU_LIST.map((b,i)=>({label:b, value:buGroups[b].exec, color:colors[i]})), '전사 임원(명)');
+  attachBUExecTooltip(buGroups);
 
   renderBarList('buExecRatioContent', BU_LIST.map(b=>{ const g=buGroups[b]; return {label:b, value:g.exec?Math.round(g.count/g.exec*10)/10:0}; }), {unit:'명'});
 
@@ -869,7 +890,7 @@ function renderChangeTable(rows){
       const bodyRows = list.map(c=>`<tr><td class="lbl">${c.name}<span class="chg-position">${c.position?' · '+c.position:''}</span></td><td><span class="chg-arrow">${c.before} -> ${c.after}</span></td></tr>`).join('');
       return head+bodyRows;
     }).join('');
-bodyEl.innerHTML = `<div class="change-scroll"><table class="tbl"><tr><th class="lbl">구분/성명</th><th>변동내역</th></tr>${body}</table></div>`;
+    bodyEl.innerHTML = `<div class="change-scroll"><table class="tbl"><tr><th class="lbl">구분/성명</th><th>변동내역</th></tr>${body}</table></div>`;
   });
 }
 
