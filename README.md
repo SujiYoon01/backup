@@ -1,53 +1,34 @@
-function renderEduCard(active) {
-  const groups = {};
-  active.forEach(r => {
-    const g = groupOf(r[ORG_FIELD]);
-    const e = eduSimple((r['최종학력'] || '').trim());
-    if (!groups[g]) groups[g] = {};
-    groups[g][e] = (groups[g][e] || 0) + 1;
-  });
-
-  const degrees = ['박사', '석사', '학사이하'];
-  const groupNames = GROUP_ORDER.filter(g => groups[g]);
-
-  let rows = '<tr><th class="lbl">조직명</th>' +
-    degrees.map(d => `<th>${d}</th>`).join('') +
-    '<th>계</th></tr>';
-
-  const totals = { 박사: 0, 석사: 0, 학사이하: 0 };
-
-  groupNames.forEach(g => {
-    const gd = groups[g] || {};
-    let sum = 0;
-    rows += `<tr><td class="lbl">${g}</td>`;
-    degrees.forEach(d => {
-      const v = gd[d] || 0;
-      sum += v;
-      totals[d] += v;
-      rows += `<td>${v}</td>`;
-    });
-    rows += `<td>${sum}</td></tr>`;
-  });
-
-  const hqGroup = groups['미분류'] || {};
-  degrees.forEach(d => {
-    totals[d] += (hqGroup[d] || 0);
-  });
-
-  const totalSum = degrees.reduce((a, d) => a + totals[d], 0);
-
-  rows += `<tr class="total"><td class="lbl">합계</td>${degrees.map(d => `<td>${totals[d]}</td>`).join('')}<td>${totalSum}</td></tr>`;
-
-  document.getElementById('eduContent').innerHTML =
-    `<div class="split"><div class="tbl-col"><table class="tbl">${rows}</table></div><div class="chart-col" id="eduPie"></div></div>`;
-
-  const colors = donutPalette(degrees.length);
-  renderDonut('eduPie', degrees.map((d, i) => ({ label: d, value: totals[d], color: colors[i] })), '학력 분포');
+const SITE_SUMMARY_ORGS = {
+  '용인': ['차세대위성체계팀','위성체계팀','위성본체팀','위성탑재체1팀','위성탑재체2팀','위성지상체팀','위성기계팀'],
+  '서현': ['위성탑재체3팀'],
+  '제주': ['제주우주센터'],
+  '서울2': ['우주사업전략팀','우주사업단','솔루션사업팀']
+};
+function renderSiteCard(active){
+  const counts={};
+  active.forEach(r=>{ const s=r['사업장']||'미기재'; counts[s]=(counts[s]||0)+1; });
+  const labels = Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  const colors = donutPalette(labels.length);
+  renderDonut('siteContent', labels.map((l,i)=>({label:l, value:counts[l], color:colors[i]})), '사업장별 인원(명)');
+  attachSiteSummaryTooltip(labels);
 }
-
-
-
-
-
-
-
+function attachSiteSummaryTooltip(labels){
+  const svg = document.querySelector('#siteContent svg');
+  if(!svg) return;
+  svg.querySelectorAll('path').forEach((path,i)=>{
+    const site = labels[i];
+    if(!SITE_SUMMARY_ORGS[site]) return;
+    path.style.cursor='pointer';
+    path.addEventListener('click', e=>{ e.stopPropagation(); toggleSiteSummaryTooltip(e,site); });
+  });
+}
+function toggleSiteSummaryTooltip(e,site){
+  let tip=document.getElementById('siteSummaryTooltip');
+  if(!tip){ tip=document.createElement('div'); tip.id='siteSummaryTooltip'; tip.className='flow-tooltip'; document.body.appendChild(tip); }
+  if(tip.style.display==='block' && tip.dataset.site===site){ tip.style.display='none'; delete tip.dataset.site; return; }
+  const orgs = SITE_SUMMARY_ORGS[site]||[];
+  tip.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">${site} 소속 부서</div>` + orgs.map(o=>`<div>${o}</div>`).join('');
+  tip.dataset.site = site;
+  tip.style.left=(e.pageX+12)+'px'; tip.style.top=(e.pageY+12)+'px'; tip.style.display='block';
+}
+document.addEventListener('click', e=>{ const tip=document.getElementById('siteSummaryTooltip'); if(tip && e.target.tagName!=='path'){ tip.style.display='none'; delete tip.dataset.site; } });
