@@ -14,4 +14,25 @@
 
 '사업장별 인원현황'에서 각 사업장 조각을 누르면 '용인'에는 '차세대위성체계팀, 위성체계팀, 위성본체팀, 위성탑재체1팀, 위성탑재체2팀, 위성지상체팀, 위성기계팀'이 뜨게 해. '서현;을 누르면 '위성탑재체3팀'이 뜨게 해. '제주' 누르면 '제주우주센터'가 뜨게 해. '서울2' 누르면 '우주사업전략팀, 우주사업단, 솔루션사업팀'이 뜨게 해. 그리고 카드 우측 상단에 '사업장 클릭시 해당 사업장 소속 부서 확인 가능'이런 워딩을 넣고 싶어. 
 
-'부서별 레벨 피라미드'에서 클릭 시 해당 부서 피라미드 상세 보기에서 각 레벨을 클릭하면 그 부서 그 레벨에 해당하는 사람들 이름을 띄워.
+'부서별 레벨 피라미드'에서 클릭 시 해당 부서 피라미드 상세 보기에서 각 레벨을 클릭하면 그 부서 그 레벨에 해당하는 사람들 이름을 function renderEduCard(active){
+  const groups={};
+  active.forEach(r=>{ const g=groupOf(r[ORG_FIELD]); const e=eduSimple((r['최종학력']||'').trim()); if(!groups[g]) groups[g]={}; groups[g][e]=(groups[g][e]||0)+1; });
+  const degrees=['박사','석사','학사이하']; const groupNames=GROUP_ORDER.filter(g=>groups[g]);
+  let rows='<tr><th class="lbl">조직명</th>'+degrees.map(d=>`<th>${d}</th>`).join('')+'<th>계</th></tr>';
+  const totals={박사:0,석사:0,학사이하:0};
+  groupNames.forEach(g=>{ const gd=groups[g]||{}; let sum=0; rows+=`<tr><td class="lbl">${g}</td>`;
+    degrees.forEach(d=>{ const v=gd[d]||0; sum+=v; totals[d]+=v; rows+=`<td>${v}</td>`; }); rows+=`<td>${sum}</td></tr>`; });
+  const hqGroup = groups['미분류'] || {};
+  degrees.forEach(d=>{ totals[d] += (hqGroup[d]||0); });
+  const totalSum = degrees.reduce((a,d)=>a+totals[d],0);
+  rows += `<tr class="total"><td class="lbl">합계</td>${degrees.map(d=>`<td>${totals[d]}</td>`).join('')}<td>${totalSum}</td></tr>`;
+  document.getElementById('eduContent').innerHTML = `<div class="split"><div class="tbl-col"><table class="tbl">${rows}</table></div><div class="chart-col" id="eduPie"></div></div>`;
+  const colors = donutPalette(degrees.length);
+  renderDonut('eduPie', degrees.map((d,i)=>({label:d, value:totals[d], color:colors[i]})), '학력 분포');
+}
+
+
+
+
+
+
