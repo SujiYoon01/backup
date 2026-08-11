@@ -1,23 +1,14 @@
 function renderEduCard(active){
   const groups={};
   active.forEach(r=>{ const g=groupOf(r[ORG_FIELD]); const e=eduSimple((r['최종학력']||'').trim()); if(!groups[g]) groups[g]={}; groups[g][e]=(groups[g][e]||0)+1; });
+  if(!groups['직속조직']) groups['직속조직']={};
+  groups['직속조직']['박사'] = (groups['직속조직']['박사']||0) + 1;
+  groups['직속조직']['석사'] = (groups['직속조직']['석사']||0) + 2;
   const degrees=['박사','석사','학사이하']; const groupNames=GROUP_ORDER.filter(g=>groups[g]);
-  const EXEC_EDU_OVERRIDES = [
-    {name:'영준', degree:'박사'},
-    {name:'김선은', degree:'석사'},
-    {name:'송성찬', degree:'석사'}
-  ];
-  EXEC_EDU_OVERRIDES.forEach(o=>{
-    if(!groups['직속조직']) groups['직속조직']={};
-    groups['직속조직'][o.degree] = (groups['직속조직'][o.degree]||0)+1;
-    if(groups['미분류'] && groups['미분류'][o.degree]) groups['미분류'][o.degree]--;
-  });
   let rows='<tr><th class="lbl">조직명</th>'+degrees.map(d=>`<th>${d}</th>`).join('')+'<th>계</th></tr>';
   const totals={박사:0,석사:0,학사이하:0};
   groupNames.forEach(g=>{ const gd=groups[g]||{}; let sum=0; rows+=`<tr><td class="lbl">${g}</td>`;
     degrees.forEach(d=>{ const v=gd[d]||0; sum+=v; totals[d]+=v; rows+=`<td>${v}</td>`; }); rows+=`<td>${sum}</td></tr>`; });
-  const hqGroup = groups['미분류'] || {};
-  degrees.forEach(d=>{ totals[d] += (hqGroup[d]||0); });
   const totalSum = degrees.reduce((a,d)=>a+totals[d],0);
   rows += `<tr class="total"><td class="lbl">합계</td>${degrees.map(d=>`<td>${totals[d]}</td>`).join('')}<td>${totalSum}</td></tr>`;
   document.getElementById('eduContent').innerHTML = `<div class="split"><div class="tbl-col"><table class="tbl">${rows}</table></div><div class="chart-col" id="eduPie"></div></div>`;
