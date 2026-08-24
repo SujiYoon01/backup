@@ -1,1 +1,9 @@
-file:///C:/Users/HSC/Downloads/%EC%9A%B0%EC%A3%BC%EC%82%AC%EC%97%85%EB%B6%80_%EC%9D%B8%EC%9B%90%EC%9B%94%EB%B3%B4_20260824%20(5).html
+const EMBEDDED_CURR_CSV = `여기에 당월 CSV 내용 그대로 붙여넣기`;
+const EMBEDDED_PREV_CSV = `여기에 전월 CSV 내용 그대로 붙여넣기 (없으면 이 줄과 아래 관련 줄 생략)`;
+
+state.curr = parseCsvText(EMBEDDED_CURR_CSV);
+state.prev = parseCsvText(EMBEDDED_PREV_CSV);
+renderAllFromCurrent();
+renderBUSection();
+if(state.curr && state.prev) renderComparison();
+
