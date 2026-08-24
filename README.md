@@ -123,6 +123,11 @@
 const EXCLUDE_구분 = ['근태예외자'];
 const EXCLUDE_직급 = ['상무', '전무', '부사장'];
 const DEPT_REMAP = {};              // 예: { '제조팀':'제주우주센터' }
+// 전체 로우데이터 컬럼 (참고용):
+// No, 구분, 년월, 주차, 사번, 이름, 직급, 사업장, 부서명,
+// 월,화,수,목,금,토,일, 주확정근무시간, 평일확정근무시간, 법정휴게시간,
+// 비업무_기타, 비업무, 비업무(중식)
+// -> 지금 카드(인원검색)는 이 중 아래 컬럼만 사용. 나머지는 이후 카드에서 활용 예정.
 const REQUIRED_COLUMNS = ['구분','년월','주차','사번','이름','직급','사업장','부서명','주확정근무시간'];
 
 /* ============================================================
@@ -146,28 +151,28 @@ function onRawFile(file){
   reader.onload = e => {
     try{
       const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const raw = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
-      if(raw.length===0){ showUploadError('데이터가 없습니다.'); return; }
-
       const normalize = s => String(s).normalize('NFC').trim();
       const reqNorm = REQUIRED_COLUMNS.map(normalize);
 
-      // 상위 10개 행 중 필수 컬럼명이 가장 많이 일치하는 행을 헤더로 판단
-      // (제목행/병합셀 등으로 헤더가 1행이 아닌 경우 대비)
-      let headerIdx = -1, bestMatch = 0;
-      for(let i=0; i<Math.min(10, raw.length); i++){
-        const rowNorm = raw[i].map(normalize);
-        const matchCount = reqNorm.filter(c => rowNorm.includes(c)).length;
-        if(matchCount > bestMatch){ bestMatch = matchCount; headerIdx = i; }
-      }
+      // 모든 시트 + 각 시트 상위 15개 행을 훑어서 필수 컬럼이 가장 많이 일치하는 지점을 헤더로 판단
+      // (표지/안내 시트가 앞에 있거나, 헤더가 1행이 아닌 경우 대비)
+      let bestSheet = null, headerIdx = -1, bestMatch = 0, bestRaw = null;
+      wb.SheetNames.forEach(name => {
+        const raw = XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, defval:''});
+        for(let i=0; i<Math.min(15, raw.length); i++){
+          const rowNorm = raw[i].map(normalize);
+          const matchCount = reqNorm.filter(c => rowNorm.includes(c)).length;
+          if(matchCount > bestMatch){ bestMatch = matchCount; headerIdx = i; bestSheet = name; bestRaw = raw; }
+        }
+      });
 
-      if(headerIdx === -1 || bestMatch < REQUIRED_COLUMNS.length){
-        const detected = headerIdx>=0 ? raw[headerIdx].join(', ') : '헤더를 찾지 못했습니다';
-        showUploadError('필수 컬럼을 찾을 수 없습니다. 감지된 헤더: ' + detected);
+      if(bestSheet === null || bestMatch < REQUIRED_COLUMNS.length){
+        const detected = bestRaw ? bestRaw[headerIdx].join(', ') : '(시트에서 텍스트 헤더를 찾지 못함)';
+        showUploadError(`필수 컬럼을 찾을 수 없습니다. 시트 목록: ${wb.SheetNames.join(', ')} · 가장 근접한 헤더: ${detected}`);
         return;
       }
 
+      const raw = bestRaw;
       const headers = raw[headerIdx].map(normalize);
       const rows = raw.slice(headerIdx+1)
         .map(r => {
@@ -177,7 +182,7 @@ function onRawFile(file){
         })
         .filter(r => Object.values(r).some(v => String(v).trim() !== ''));
 
-      if(rows.length===0){ showUploadError('헤더 아래에 데이터가 없습니다.'); return; }
+      if(rows.length===0){ showUploadError('헤더 아래에 데이터가 없습니다. (시트: '+bestSheet+')'); return; }
 
       clearUploadError();
       mergeRows(rows);
