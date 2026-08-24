@@ -147,10 +147,38 @@ function onRawFile(file){
     try{
       const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
-      if(rows.length===0){ showUploadError('데이터가 없습니다.'); return; }
-      const missing = REQUIRED_COLUMNS.filter(c=>!Object.keys(rows[0]).includes(c));
-      if(missing.length){ showUploadError('필수 컬럼이 없습니다: '+missing.join(', ')); return; }
+      const raw = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+      if(raw.length===0){ showUploadError('데이터가 없습니다.'); return; }
+
+      const normalize = s => String(s).normalize('NFC').trim();
+      const reqNorm = REQUIRED_COLUMNS.map(normalize);
+
+      // 상위 10개 행 중 필수 컬럼명이 가장 많이 일치하는 행을 헤더로 판단
+      // (제목행/병합셀 등으로 헤더가 1행이 아닌 경우 대비)
+      let headerIdx = -1, bestMatch = 0;
+      for(let i=0; i<Math.min(10, raw.length); i++){
+        const rowNorm = raw[i].map(normalize);
+        const matchCount = reqNorm.filter(c => rowNorm.includes(c)).length;
+        if(matchCount > bestMatch){ bestMatch = matchCount; headerIdx = i; }
+      }
+
+      if(headerIdx === -1 || bestMatch < REQUIRED_COLUMNS.length){
+        const detected = headerIdx>=0 ? raw[headerIdx].join(', ') : '헤더를 찾지 못했습니다';
+        showUploadError('필수 컬럼을 찾을 수 없습니다. 감지된 헤더: ' + detected);
+        return;
+      }
+
+      const headers = raw[headerIdx].map(normalize);
+      const rows = raw.slice(headerIdx+1)
+        .map(r => {
+          const obj = {};
+          headers.forEach((h,idx) => obj[h] = r[idx] !== undefined ? r[idx] : '');
+          return obj;
+        })
+        .filter(r => Object.values(r).some(v => String(v).trim() !== ''));
+
+      if(rows.length===0){ showUploadError('헤더 아래에 데이터가 없습니다.'); return; }
+
       clearUploadError();
       mergeRows(rows);
       processAll();
