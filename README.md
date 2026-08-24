@@ -145,12 +145,16 @@ function clearUploadError(){ const b=document.getElementById('uploadErrorBanner'
 
 function onRawFile(file){
   if(!file) return;
-  if(!/\.(xlsx|xls)$/i.test(file.name)){ showUploadError('엑셀 파일(.xlsx, .xls)만 업로드할 수 있습니다.'); return; }
+  const isCSV = /\.csv$/i.test(file.name);
+  const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+  if(!isCSV && !isExcel){ showUploadError('엑셀(.xlsx, .xls) 또는 CSV(.csv) 파일만 업로드할 수 있습니다.'); return; }
   const reader = new FileReader();
   reader.onerror = () => showUploadError('파일을 읽는 중 오류가 발생했습니다.');
   reader.onload = e => {
     try{
-      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      const wb = isCSV
+        ? XLSX.read(e.target.result, {type:'string'})
+        : XLSX.read(new Uint8Array(e.target.result), {type:'array'});
       const normalize = s => String(s).normalize('NFC').trim();
       const reqNorm = REQUIRED_COLUMNS.map(normalize);
 
@@ -189,7 +193,8 @@ function onRawFile(file){
       processAll();
     }catch(err){ showUploadError('처리 중 오류: '+err.message); }
   };
-  reader.readAsArrayBuffer(file);
+  if(isCSV) reader.readAsText(file, 'UTF-8');
+  else reader.readAsArrayBuffer(file);
 }
 
 // 같은 (년월,사번,주차) 조합은 새 업로드로 덮어쓰기 — 같은 달 재업로드 시 최신 데이터로 갱신
