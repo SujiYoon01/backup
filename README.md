@@ -1,18 +1,24 @@
-state.curr = window.__snapshotCurr
-(3629) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, …]
-state.prev = window.__snapshotPrev
-(3473) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, …]
-renderAllFromCurrent
-ƒ renderAllFromCurrent(){
-  const spaceAll = state.curr.filter(r=>isSpace(r[ORG_FIELD]));
-  const active = spaceAll.filter(r=>r['재직상태']==='재직');
-
-  document.getElementById('kpiTotalNum').textContent = …
-renderBUSection()
-우주사업부_인원월보_20260824 (8).html:455 Uncaught TypeError: Cannot read properties of null (reading 'value')
-    at baseDate (우주사업부_인원월보_20260824 (8).html:455:67)
-    at renderBUSection (우주사업부_인원월보_20260824 (8).html:812:16)
-    at <anonymous>:1:1
-baseDate @ 우주사업부_인원월보_20260824 (8).html:455
-renderBUSection @ 우주사업부_인원월보_20260824 (8).html:812
-(anonymous) @ VM787:1
+function exportSnapshot(){
+  if(!state.curr){ alert('먼저 당월 명부 CSV를 업로드해주세요.'); return; }
+  const dateVal = document.getElementById('reportDate').value || new Date().toISOString().slice(0,10);
+  const clone = document.documentElement.cloneNode(true);
+  ['.data-bar','#uploadErrorBanner'].forEach(sel=>{ const el=clone.querySelector(sel); if(el) el.remove(); });
+  const clonedInput = clone.querySelector('#reportDate');
+  if(clonedInput) clonedInput.setAttribute('value', dateVal);
+  const dataScript = document.createElement('script');
+  dataScript.textContent = 'window.__snapshotCurr = ' + JSON.stringify(state.curr) + ';' +
+    'window.__snapshotPrev = ' + JSON.stringify(state.prev) + ';' +
+    'window.addEventListener("DOMContentLoaded", function(){' +
+      'state.curr = window.__snapshotCurr;' +
+      'state.prev = window.__snapshotPrev;' +
+      'renderAllFromCurrent();' +
+      'renderBUSection();' +
+      'if(state.curr && state.prev) renderComparison();' +
+    '});';
+  clone.querySelector('body').appendChild(dataScript);
+  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href=url; a.download=`우주사업부_인원월보_${dateVal.replace(/-/g,'')}.html`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
